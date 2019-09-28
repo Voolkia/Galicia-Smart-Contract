@@ -1,0 +1,85 @@
+<div class="form-mini-container">
+    <h1>Register a paper into the blockchain (For testing purposes)</h1>
+    <div class="form-mini">
+        <div class="form-row">
+            <input type="text" name="issue" placeholder="Issue" id='issue'>
+        </div>
+        <div class="form-row">
+            <input type="text" name="authors" placeholder="Authors" id='authors'>
+        </div>
+        <div class="form-row">
+            <input type="text" name="title" placeholder="Title" id='title'>
+        </div>
+        <div class="form-row">
+            <input type="file" name="paper" placeholder="Test hash paper" id='paper'>
+        </div> 
+        <div class="form-row form-last-row">
+            <button id="sendPaper">Submit</button>
+        </div>
+        <p id="paperCount">Submitted papers: 0</p>
+    </div>
+</div>
+<script>
+    var hashContent;
+    var hashID;
+    var paper = "";
+
+    ps.papersCount((err, resp) => {
+        if(err){
+            console.log(err);
+        }
+        else{
+            $('#paperCount').text('Submitted papers: '+resp);
+        }
+    });
+    
+    $('#paper').change(function(){
+        paper = $(this).prop('files')[0];
+        read = new FileReader();
+        read.readAsBinaryString(paper);
+        $("#sendPaper").prop("disabled", true);
+        read.onloadend = function(){
+            hashContent = web3.sha3(read.result);
+            console.log(hashContent);
+            ps.getPaperByContent(hashContent, function(err,resp){
+                if(err){
+                    console.log(err);
+                }
+                else {
+                    console.log(resp);
+                    $("#sendPaper").prop("disabled", false);
+                    [author, title] = resp;
+                    if(author!=''){ 
+                        paper = "";
+                        alert('Warning! This paper is already registered as "'+title+'" from '+author);
+                        $('#paper').val("");
+                    }
+                }
+            });
+        }
+    });
+
+    $('#sendPaper').click(function(){
+        authors = $('#authors').val();
+        title = $('#title').val();
+        issue = $('#issue').val();
+        if(authors !="" && title!="" && paper!=""){
+            console.log('content = '+hashContent+' ?');
+            ps.storePaper( 
+                        hashContent, 
+                        issue,
+                        authors, 
+                        title, 
+                        (err, callback) => { 
+                            if(err) console.log(err);
+                            else{
+                                confirm("The information sent is being mined. A pop up will show up on your browser when the process is finished.");
+                                location.reload();
+                            }
+                        });
+        }
+        else{
+            alert("Complete todos los campos antes de continuar");
+        }
+    });
+</script>
